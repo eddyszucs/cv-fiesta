@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>CV Tailor AI - Options</title>
+  <style>
+    body {
+      max-width: 600px;
+      margin: 40px auto;
+      padding: 20px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: #f4f7f6;
+    }
+    .card {
+      background: white;
+      padding: 25px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      margin-top: 0;
+      color: #333;
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: bold;
+      color: #555;
+    }
+    input[type="password"], textarea {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    textarea {
+      height: 200px;
+      resize: vertical;
+    }
+    .file-input-wrapper {
+      padding: 15px;
+      border: 2px dashed #ccc;
+      border-radius: 4px;
+      text-align: center;
+      background: #fafafa;
+    }
+    button {
+      background-color: #28a745;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: bold;
+      width: 100%;
+      transition: background 0.2s;
+    }
+    button:hover {
+      background-color: #218838;
+    }
+    .status {
+      margin-top: 15px;
+      padding: 10px;
+      border-radius: 4px;
+      display: none;
+    }
+    .success {
+      background-color: #d4edda;
+      color: #155724;
+      display: block;
+    }
+    #template-status {
+      margin-top: 10px;
+      font-style: italic;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>CV Tailor Configuration</h1>
+    
+    <div class="form-group">
+      <label for="api-key">OpenRouter API Key</label>
+      <input type="password" id="api-key" placeholder="sk-or-...">
+    </div>
+
+    <div class="form-group">
+      <label for="ai-model">AI Model ID</label>
+      <input type="text" id="ai-model" placeholder="e.g., openrouter/hunter-alpha">
+    </div>
+
+    <div class="form-group">
+      <label for="career-history">Career History</label>
+      <textarea id="career-history" placeholder="Paste your full history here..."></textarea>
+    </div>
+
+    <div class="form-group">
+      <label>CV Template (.docx)</label>
+      <div class="file-input-wrapper">
+        <input type="file" id="template-file" accept=".docx">
+        <div id="template-status">No template loaded</div>
+      </div>
+      <p style="font-size: 0.8em; color: #777;">Must use {Placeholder} style (e.g., {Summary}).</p>
+    </div>
+
+    <button id="save-settings">Save Configuration</button>
+    <div id="status" class="status"></div>
+  </div>
+
+  <script src="lib/browser-polyfill.js"></script>
+  <script src="options.js"></script>
+</body>
+</html>

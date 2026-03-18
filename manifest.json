@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "CV Tailor AI",
+  "version": "1.0",
+  "description": "Tailor your CV to job descriptions using AI directly in your browser.",
+  "permissions": [
+    "storage",
+    "activeTab",
+    "scripting"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "48": "icon.png"
+    }
+  },
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  },
+  "icons": {
+    "48": "icon.png"
+  },
+  "host_permissions": [
+    "https://openrouter.ai/*"
+  ]
+}

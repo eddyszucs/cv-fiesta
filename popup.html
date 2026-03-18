@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>CV Tailor AI</title>
+  <style>
+    body {
+      width: 320px;
+      padding: 15px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    h2 {
+      margin: 0;
+      font-size: 1.2em;
+    }
+    #open-settings {
+      background: none;
+      border: none;
+      color: #007bff;
+      cursor: pointer;
+      font-size: 0.9em;
+      text-decoration: underline;
+      padding: 0;
+    }
+    button#analyze-btn {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      padding: 12px 15px;
+      border-radius: 4px;
+      cursor: pointer;
+      width: 100%;
+      font-size: 1em;
+      font-weight: bold;
+    }
+    button#analyze-btn:hover {
+      background-color: #0056b3;
+    }
+    button#analyze-btn:disabled {
+      background-color: #ccc;
+    }
+    .status {
+      margin-top: 15px;
+      font-size: 0.9em;
+      color: #555;
+      text-align: center;
+    }
+    .error { color: #d9534f; }
+    .success { color: #5cb85c; }
+    
+    #fitness-box {
+      border: 1px solid #ddd;
+      padding: 12px;
+      margin-top: 15px;
+      border-radius: 4px;
+      display: none;
+      background-color: #f9f9f9;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h2>CV Tailor AI</h2>
+    <button id="open-settings">Settings</button>
+  </div>
+
+  <div id="main-content">
+    <button id="analyze-btn">Analyze & Tailor CV</button>
+    <div class="status" id="status">Ready to tailor your CV.</div>
+    
+    <div id="fitness-box">
+      <strong>Fitness: <span id="fitness-score"></span>/100</strong>
+      <p id="fitness-analysis" style="font-size: 0.85em; margin-bottom: 0;"></p>
+    </div>
+  </div>
+
+  <script src="lib/browser-polyfill.js"></script>
+  <script src="lib/pizzip.js"></script>
+  <script src="lib/docxtemplater.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>
