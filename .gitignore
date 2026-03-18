@@ -21,3 +21,4 @@ CLAUDE.md
 config.xml
 AGENTS.md
 .claude
+/secrets/

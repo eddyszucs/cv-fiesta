@@ -1,4 +1,4 @@
-﻿// Navigation
+// Navigation
 document.getElementById('open-settings').addEventListener('click', () => {
   if (browser.runtime.openOptionsPage) {
     browser.runtime.openOptionsPage();
@@ -9,61 +9,206 @@ document.getElementById('open-settings').addEventListener('click', () => {
 
 // Main Action Elements
 const analyzeBtn = document.getElementById('analyze-btn');
+const downloadBtn = document.getElementById('download-btn');
+const resetBtn = document.getElementById('reset-btn');
 const statusDiv = document.getElementById('status');
 const fitnessBox = document.getElementById('fitness-box');
 const fitnessScoreSpan = document.getElementById('fitness-score');
 const fitnessAnalysisP = document.getElementById('fitness-analysis');
+const progressSteps = document.getElementById('progress-steps');
+
+// Handle reset button click
+resetBtn.addEventListener('click', async () => {
+  await browser.storage.local.remove([
+    'analysisInProgress', 
+    'analysisStep', 
+    'analysisError', 
+    'analysisResult', 
+    'generatedDocx', 
+    'generatedDocxName'
+  ]);
+  resetSteps();
+  updateStatus('Ready to tailor your CV.', 'info');
+  analyzeBtn.disabled = false;
+  resetBtn.style.display = 'none';
+  fitnessBox.style.display = 'none';
+});
+
+// Handle download button click
+downloadBtn.addEventListener('click', async () => {
+  const data = await browser.storage.local.get(['generatedDocx', 'generatedDocxName']);
+  if (!data.generatedDocx) {
+    updateStatus('No generated CV found. Try analyzing again.', 'error');
+    return;
+  }
+
+  try {
+    // Convert base64 to Blob
+    const binaryString = atob(data.generatedDocx);
+    const len = binaryString.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    const blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+    
+    // Create Object URL
+    const url = URL.createObjectURL(blob);
+    
+    // Create hidden link and click it
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = data.generatedDocxName || `tailored_cv_${Date.now()}.docx`;
+    document.body.appendChild(a);
+    a.click();
+    
+    // Cleanup
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 100);
+
+    updateStatus('Download started!', 'success');
+  } catch (err) {
+    console.error('Download failed:', err);
+    updateStatus('Download failed: ' + err.message, 'error');
+  }
+});
+
+// Step definitions
+const STEPS = {
+  EXTRACT: 'extract',
+  ANALYZE: 'analyze',
+  GENERATE: 'generate',
+  COMPLETE: 'complete'
+};
 
 // Restore state on popup open
 document.addEventListener('DOMContentLoaded', restoreState);
 
 async function restoreState() {
-  const data = await browser.storage.local.get(['analysisResult', 'analysisInProgress', 'analysisError']);
-  
+  const data = await browser.storage.local.get([
+    'analysisResult',
+    'analysisInProgress',
+    'analysisError',
+    'analysisStep'
+  ]);
+
   if (data.analysisResult) {
     // Show previous results
     fitnessScoreSpan.textContent = data.analysisResult.fitness_score;
     fitnessAnalysisP.textContent = data.analysisResult.analysis;
     fitnessBox.style.display = 'block';
-    updateStatus('CV generated and downloaded!', 'success');
+    updateStatus('CV generated! Download below.', 'success');
+    updateStep(STEPS.COMPLETE);
+    resetBtn.style.display = 'block'; // Allow reset
   } else if (data.analysisInProgress) {
     // Analysis is running in background
     updateStatus('Analysis in progress... check back shortly.', 'info');
     analyzeBtn.disabled = true;
+    resetBtn.style.display = 'block'; // Allow emergency reset
+    // Restore the current step if available
+    if (data.analysisStep) {
+      updateStep(data.analysisStep);
+    }
     pollForResults();
   } else if (data.analysisError) {
     updateStatus(data.analysisError, 'error');
-    await browser.storage.local.remove('analysisError');
+    analyzeBtn.disabled = false;
+    resetBtn.style.display = 'block';
+  } else {
+    resetBtn.style.display = 'none';
+    resetSteps();
   }
 }
 
 async function pollForResults() {
   // Poll storage for results
   const checkInterval = setInterval(async () => {
-    const data = await browser.storage.local.get(['analysisResult', 'analysisInProgress', 'analysisError']);
-    
+    const data = await browser.storage.local.get([
+      'analysisResult',
+      'analysisInProgress',
+      'analysisError',
+      'analysisStep'
+    ]);
+
     if (data.analysisResult) {
       clearInterval(checkInterval);
       fitnessScoreSpan.textContent = data.analysisResult.fitness_score;
       fitnessAnalysisP.textContent = data.analysisResult.analysis;
       fitnessBox.style.display = 'block';
-      updateStatus('CV generated and downloaded!', 'success');
+      updateStatus('CV generated! Download below.', 'success');
+      updateStep(STEPS.COMPLETE);
       analyzeBtn.disabled = false;
+      resetBtn.style.display = 'block';
     } else if (data.analysisError) {
       clearInterval(checkInterval);
       updateStatus(data.analysisError, 'error');
       analyzeBtn.disabled = false;
-      await browser.storage.local.remove('analysisError');
+      resetBtn.style.display = 'block';
     } else if (!data.analysisInProgress) {
-      // Analysis was cleared without result (shouldn\'t happen, but handle it)
       clearInterval(checkInterval);
       updateStatus('Ready to tailor your CV.', 'info');
       analyzeBtn.disabled = false;
+      resetBtn.style.display = 'none';
+      resetSteps();
+    } else if (data.analysisStep) {
+      updateStep(data.analysisStep);
     }
   }, 1000);
-  
-  // Stop polling after 2 minutes
+
   setTimeout(() => clearInterval(checkInterval), 120000);
+}
+
+// Progress Steps Functions
+function resetSteps() {
+  const steps = progressSteps.querySelectorAll('.step');
+  steps.forEach(step => {
+    step.className = 'step pending';
+    const circle = step.querySelector('.step-circle');
+    const stepName = step.dataset.step;
+    // Reset circle content to number
+    circle.textContent = getStepNumber(stepName);
+  });
+}
+
+function getStepNumber(stepName) {
+  const stepOrder = [STEPS.EXTRACT, STEPS.ANALYZE, STEPS.GENERATE, STEPS.COMPLETE];
+  return stepOrder.indexOf(stepName) + 1;
+}
+
+function updateStep(currentStep) {
+  const stepOrder = [STEPS.EXTRACT, STEPS.ANALYZE, STEPS.GENERATE, STEPS.COMPLETE];
+  const currentIndex = stepOrder.indexOf(currentStep);
+
+  if (currentIndex === -1) return;
+
+  const steps = progressSteps.querySelectorAll('.step');
+
+  steps.forEach((step, index) => {
+    const stepName = step.dataset.step;
+    const circle = step.querySelector('.step-circle');
+
+    // Remove all state classes
+    step.classList.remove('pending', 'active', 'completed');
+
+    if (index < currentIndex) {
+      // Completed step
+      step.classList.add('completed');
+      circle.innerHTML = '<span class="checkmark"></span>';
+    } else if (index === currentIndex) {
+      // Active step
+      step.classList.add('active');
+      circle.textContent = getStepNumber(stepName);
+    } else {
+      // Pending step
+      step.classList.add('pending');
+      circle.textContent = getStepNumber(stepName);
+    }
+  });
+
+  // Save current step to storage
+  browser.storage.local.set({ analysisStep: currentStep });
 }
 
 analyzeBtn.addEventListener('click', async () => {
@@ -73,13 +218,14 @@ analyzeBtn.addEventListener('click', async () => {
       throw new Error('Please configure settings (API Key, History, and Template) first.');
     }
 
-    const model = data.aiModel || 'openrouter/hunter-alpha';
-
     analyzeBtn.disabled = true;
     fitnessBox.style.display = 'none';
+
+    // Step 1: Extract
+    updateStep(STEPS.EXTRACT);
     updateStatus('Extracting job description...', 'info');
 
-    // 1. Extract job description
+    // Extract job description from active tab
     const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
     const results = await browser.scripting.executeScript({
       target: { tabId: tab.id },
@@ -87,44 +233,39 @@ analyzeBtn.addEventListener('click', async () => {
     });
     const jobDescription = results[0].result;
 
-    updateStatus('Calling AI for analysis...', 'info');
-    
     // Mark analysis as in progress
-    await browser.storage.local.set({ 
+    await browser.storage.local.set({
       analysisInProgress: true,
-      analysisTabUrl: tab.url 
+      analysisTabUrl: tab.url,
+      analysisStep: STEPS.ANALYZE
     });
-    await browser.storage.local.remove(['analysisResult', 'analysisError']);
+    await browser.storage.local.remove(['analysisResult', 'analysisError', 'generatedDocx', 'generatedDocxName']);
 
-    // 2. AI Call
-    const aiResponse = await callAI(data.apiKey, data.history, jobDescription, model);
-    
-    fitnessScoreSpan.textContent = aiResponse.fitness_score;
-    fitnessAnalysisP.textContent = aiResponse.analysis;
-    fitnessBox.style.display = 'block';
-
-    updateStatus('Generating tailored CV...', 'info');
-
-    // 3. Generate DOCX
-    await generateDOCX(data.templateBase64, aiResponse.replacements);
-
-    // Save results to storage so they persist after popup closes
-    await browser.storage.local.set({ 
-      analysisResult: {
-        fitness_score: aiResponse.fitness_score,
-        analysis: aiResponse.analysis
+    // Send message to background script to handle the long-running task
+    await browser.runtime.sendMessage({
+      action: 'startAnalysis',
+      data: {
+        apiKey: data.apiKey,
+        history: data.history,
+        templateBase64: data.templateBase64,
+        aiModel: data.aiModel,
+        jobDescription: jobDescription,
+        tabUrl: tab.url
       }
     });
-    await browser.storage.local.remove(['analysisInProgress', 'analysisTabUrl']);
 
-    updateStatus('CV generated and downloaded!', 'success');
+    // Update UI to show it's running in background
+    updateStep(STEPS.ANALYZE);
+    updateStatus('Analysis running in background... you can close this popup.', 'info');
+
+    // Start polling for results
+    pollForResults();
+
   } catch (err) {
     updateStatus(err.message, 'error');
     console.error(err);
-    // Save error so it can be shown if popup was closed
     await browser.storage.local.set({ analysisError: err.message });
-    await browser.storage.local.remove('analysisInProgress');
-  } finally {
+    await browser.storage.local.remove(['analysisInProgress', 'analysisStep']);
     analyzeBtn.disabled = false;
   }
 });
@@ -132,106 +273,4 @@ analyzeBtn.addEventListener('click', async () => {
 function updateStatus(msg, type) {
   statusDiv.textContent = msg;
   statusDiv.className = 'status ' + (type || '');
-}
-
-async function callAI(apiKey, history, jobDesc, model) {
-  const prompt = `
-You are an expert career coach and CV writer specializing in ATS (Applicant Tracking System) optimization.
-I have a database of my past experiences and a target job description.
-
-Your goal is to:
-1. Analyze how well I fit the job (0-100 score).
-2. Explain the fit briefly.
-3. Generate content for a CV template to tailor it specifically for this job.
-
-CRITICAL CONSTRAINTS:
-- **Include All Experiences:** You MUST include at least the 3 most recent/relevant experiences from my history.
-- **ATS Optimization:** Integrate keywords from the job description naturally.
-- **Impact-Oriented:** Use action verbs and quantify achievements.
-
-My History:
-${history}
-
-Target Job:
-${jobDesc}
-
-Output Format:
-Return ONLY a valid JSON object with this structure:
-{
-  "fitness_score": <int>,
-  "analysis": "<string>",
-  "replacements": {
-    "Summary": "<text>",
-    "Skills": "<text>",
-    "Experience1": "<text>",
-    "Experience2": "<text>",
-    "Experience3": "<text>"
-  }
-}
-`;
-
-  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-      'HTTP-Referer': 'https://github.com/cv-analyzer-extension',
-      'X-Title': 'CV Tailor Extension'
-    },
-    body: JSON.stringify({
-      model: model,
-      messages: [{ role: 'user', content: prompt }]
-    })
-  });
-
-  const body = await response.json();
-  if (body.error) throw new Error(body.error.message);
-
-  let content = body.choices[0].message.content;
-  content = content.replace(/```json/g, '').replace(/```/g, '').trim();
-
-  return JSON.parse(content);
-}
-
-async function generateDOCX(base64Template, replacements) {
-  if (typeof window.PizZip === 'undefined') {
-    throw new Error('PizZip library not loaded. Please reload the extension.');
-  }
-  const Docxtemplater = window.docxtemplater || window.Docxtemplater;
-  if (typeof Docxtemplater === 'undefined') {
-    throw new Error('docxtemplater library not loaded. Please reload the extension.');
-  }
-
-  const binaryString = window.atob(base64Template);
-  const bytes = new Uint8Array(binaryString.length);
-  for (let i = 0; i < binaryString.length; i++) {
-    bytes[i] = binaryString.charCodeAt(i);
-  }
-
-  const zip = new window.PizZip(bytes.buffer);
-  const doc = new Docxtemplater(zip, {
-    paragraphLoop: true,
-    linebreaks: true,
-  });
-
-  doc.setData(replacements);
-
-  try {
-    doc.render();
-  } catch (error) {
-    console.error('Error rendering docx:', error);
-    throw new Error('Failed to render document placeholders.');
-  }
-
-  const out = doc.getZip().generate({
-    type: 'blob',
-    mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  });
-
-  const url = URL.createObjectURL(out);
-  const anchor = document.createElement('a');
-  anchor.href = url;
-  anchor.download = `tailored_cv_${Date.now()}.docx`;
-  anchor.click();
-  URL.revokeObjectURL(url);
 }

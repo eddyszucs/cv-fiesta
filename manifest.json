@@ -6,8 +6,18 @@
   "permissions": [
     "storage",
     "activeTab",
-    "scripting"
+    "scripting",
+    "downloads",
+    "alarms"
   ],
+  "background": {
+    "scripts": [
+      "lib/browser-polyfill.js",
+      "lib/pizzip.js",
+      "lib/docxtemplater.js",
+      "background.js"
+    ]
+  },
   "action": {
     "default_popup": "popup.html",
     "default_icon": {

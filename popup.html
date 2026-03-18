@@ -4,63 +4,252 @@
   <meta charset="UTF-8">
   <title>CV Tailor AI</title>
   <style>
-    body {
-      width: 320px;
-      padding: 15px;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    :root {
+      --bg-primary: #FFFFFF;
+      --bg-secondary: #F5F5F5;
+      --forest-green: #1B5E20;
+      --forest-dark: #0D2818;
+      --forest-light: #2E7D32;
+      --accent: #4CAF50;
+      --text-primary: #212121;
+      --text-secondary: #616161;
+      --text-muted: #9E9E9E;
+      --border-color: #E0E0E0;
+      --border-green: #2E7D32;
+      --shadow: rgba(0, 0, 0, 0.1);
     }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      width: 360px;
+      padding: 20px;
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg-secondary);
+      color: var(--text-primary);
+    }
+
     .header {
       display: flex;
       justify-content: space-between;
       align-items: center;
       margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 2px solid var(--forest-green);
     }
+
     h2 {
       margin: 0;
-      font-size: 1.2em;
+      font-size: 1.3em;
+      color: var(--forest-dark);
+      font-weight: 700;
     }
+
     #open-settings {
       background: none;
       border: none;
-      color: #007bff;
+      color: var(--forest-light);
       cursor: pointer;
       font-size: 0.9em;
       text-decoration: underline;
       padding: 0;
+      transition: color 0.2s;
+      font-weight: 500;
     }
+
+    #open-settings:hover {
+      color: var(--forest-dark);
+    }
+
+    /* Progress Steps */
+    .progress-steps {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      padding: 15px;
+      background-color: var(--bg-primary);
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+    }
+
+    .step {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex: 1;
+      position: relative;
+    }
+
+    .step:not(:last-child)::after {
+      content: '';
+      position: absolute;
+      top: 12px;
+      right: -50%;
+      width: 100%;
+      height: 2px;
+      background-color: var(--border-color);
+      z-index: 0;
+    }
+
+    .step.completed:not(:last-child)::after {
+      background-color: var(--accent);
+    }
+
+    .step-circle {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: bold;
+      z-index: 1;
+      transition: all 0.3s ease;
+    }
+
+    .step.pending .step-circle {
+      background-color: var(--bg-primary);
+      border: 2px solid var(--text-muted);
+      color: var(--text-muted);
+    }
+
+    .step.active .step-circle {
+      background-color: var(--forest-green);
+      border: 2px solid var(--forest-green);
+      color: white;
+      animation: pulse 1.5s ease-in-out infinite;
+      box-shadow: 0 0 0 4px rgba(76, 175, 80, 0.2);
+    }
+
+    .step.completed .step-circle {
+      background-color: var(--accent);
+      border: 2px solid var(--accent);
+      color: white;
+    }
+
+    .step-label {
+      font-size: 0.7em;
+      margin-top: 6px;
+      color: var(--text-secondary);
+      text-align: center;
+      transition: color 0.3s ease;
+      font-weight: 500;
+    }
+
+    .step.active .step-label {
+      color: var(--forest-green);
+      font-weight: 700;
+    }
+
+    .step.completed .step-label {
+      color: var(--forest-light);
+      font-weight: 600;
+    }
+
+    @keyframes pulse {
+      0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 4px rgba(76, 175, 80, 0.2);
+      }
+      50% {
+        transform: scale(1.05);
+        box-shadow: 0 0 0 8px rgba(76, 175, 80, 0.1);
+      }
+    }
+
+    /* Main Content */
+    #main-content {
+      background-color: var(--bg-primary);
+      border-radius: 8px;
+      padding: 20px;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 2px 8px var(--shadow);
+    }
+
     button#analyze-btn {
-      background-color: #007bff;
+      background-color: var(--forest-green);
       color: white;
       border: none;
-      padding: 12px 15px;
-      border-radius: 4px;
+      padding: 14px 20px;
+      border-radius: 8px;
       cursor: pointer;
       width: 100%;
       font-size: 1em;
-      font-weight: bold;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 4px rgba(27, 94, 32, 0.3);
     }
+
     button#analyze-btn:hover {
-      background-color: #0056b3;
+      background-color: var(--forest-light);
+      box-shadow: 0 4px 12px rgba(27, 94, 32, 0.4);
+      transform: translateY(-1px);
     }
+
     button#analyze-btn:disabled {
-      background-color: #ccc;
+      background-color: var(--text-muted);
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
     }
+
     .status {
       margin-top: 15px;
       font-size: 0.9em;
-      color: #555;
       text-align: center;
+      min-height: 20px;
+      color: var(--text-secondary);
     }
-    .error { color: #d9534f; }
-    .success { color: #5cb85c; }
-    
+
+    .status.error {
+      color: #D32F2F;
+      font-weight: 500;
+    }
+
+    .status.success {
+      color: var(--forest-green);
+      font-weight: 600;
+    }
+
+    .status.info {
+      color: var(--text-secondary);
+    }
+
+    /* Fitness Box */
     #fitness-box {
-      border: 1px solid #ddd;
-      padding: 12px;
+      border: 2px solid var(--forest-green);
+      padding: 15px;
       margin-top: 15px;
-      border-radius: 4px;
+      border-radius: 8px;
       display: none;
-      background-color: #f9f9f9;
+      background-color: rgba(27, 94, 32, 0.05);
+    }
+
+    #fitness-box strong {
+      color: var(--forest-dark);
+      font-size: 1.1em;
+    }
+
+    #fitness-score {
+      color: var(--forest-green);
+      font-weight: 700;
+    }
+
+    #fitness-analysis {
+      font-size: 0.85em;
+      margin-bottom: 0;
+      margin-top: 8px;
+      color: var(--text-secondary);
+      line-height: 1.4;
+    }
+
+    /* Checkmark icon */
+    .checkmark::before {
+      content: '✓';
     }
   </style>
 </head>
@@ -70,13 +259,34 @@
     <button id="open-settings">Settings</button>
   </div>
 
+  <!-- Progress Steps -->
+  <div class="progress-steps" id="progress-steps">
+    <div class="step pending" data-step="extract">
+      <div class="step-circle">1</div>
+      <div class="step-label">Extract</div>
+    </div>
+    <div class="step pending" data-step="analyze">
+      <div class="step-circle">2</div>
+      <div class="step-label">Analyze</div>
+    </div>
+    <div class="step pending" data-step="generate">
+      <div class="step-circle">3</div>
+      <div class="step-label">Generate</div>
+    </div>
+    <div class="step pending" data-step="complete">
+      <div class="step-circle">4</div>
+      <div class="step-label">Complete</div>
+    </div>
+  </div>
+
   <div id="main-content">
     <button id="analyze-btn">Analyze & Tailor CV</button>
     <div class="status" id="status">Ready to tailor your CV.</div>
-    
-    <div id="fitness-box">
-      <strong>Fitness: <span id="fitness-score"></span>/100</strong>
-      <p id="fitness-analysis" style="font-size: 0.85em; margin-bottom: 0;"></p>
+    <button id="reset-btn" style="display: none; margin-top: 10px; background: none; border: 1px solid var(--text-muted); color: var(--text-secondary); padding: 8px; border-radius: 6px; cursor: pointer; width: 100%; font-size: 0.85em;">Reset & Try Again</button>
+
+    <div id="fitness-box">      <strong>Fitness: <span id="fitness-score"></span>/100</strong>
+      <p id="fitness-analysis"></p>
+      <button id="download-btn" style="margin-top: 15px; background-color: var(--forest-green); color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer; width: 100%; font-weight: 600;">Download Tailored CV</button>
     </div>
   </div>
 
